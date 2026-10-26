@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blitzkopf – Rechenspiel</title>
+<style>
+:root{
+  --blue:#4b83d1;--blue-dark:#285fa8;--green:#52a95c;
+  --red:#d95757;--ink:#17324d;--bg:#f4f7fb;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;
+  background:linear-gradient(135deg,#eaf2fc,#f8fbff);color:var(--ink)
+}
+.app{max-width:1400px;margin:auto;padding:20px;width:96%}
+header{
+  background:#fff;border-radius:18px;padding:14px 24px;
+  box-shadow:0 6px 24px rgba(32,75,120,.10);
+  display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:16px
+}
+h1{margin:0;font-size:26px;color:var(--blue-dark)}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+button{
+  border:0;border-radius:8px;padding:9px 14px;font-weight:700;
+  cursor:pointer;font-size:14px;transition:.15s transform,.15s opacity
+}
+button:hover{transform:translateY(-1px);opacity:.93}
+.primary{background:var(--blue);color:#fff}
+.secondary{background:#e8f0fb;color:var(--blue-dark)}
+.danger{background:#fdeaea;color:#a62e2e}
+
+/* Oberer Bereich: Team A | Zielzahl | Team B */
+.top-game-section{
+  display:grid;
+  grid-template-columns:1fr 1.05fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+  align-items:stretch;
+}
+.card{
+  background:#fff;border-radius:18px;padding:14px 18px;
+  box-shadow:0 6px 24px rgba(32,75,120,.08);
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.target-card{text-align:center;justify-content:center}
+.target-label{font-size:14px;color:#71849a;font-weight:700;letter-spacing:1px}
+#target{font-size:56px;line-height:1;margin:2px 0 0;color:var(--blue-dark);font-weight:800}
+
+/* Teams mit dickerem, farbintensivem Rand */
+.team{border-radius:16px;background:#fff}
+.team.a{border:4px solid var(--blue)}
+.team.b{border:4px solid var(--green)}
+.team-head{display:flex;justify-content:space-between;align-items:flex-start}
+.team-name{
+  font-size:17px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+  max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  user-select:none;
+}
+.team-name:hover{color:var(--blue)}
+.team-name::after{content:'✏️';font-size:11px;opacity:0.6}
+.sets-badge{font-size:13px;color:#71849a;font-weight:600;margin-top:1px}
+
+/* Punktestand & quadratische Buttons */
+.score-action-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:8px;
+}
+.score{font-size:40px;font-weight:800;line-height:1}
+.team.a .score{color:var(--blue-dark)}
+.team.b .score{color:#2e7539}
+
+.btn-square-group{
+  display:flex;
+  gap:6px;
+}
+.btn-sq{
+  width:38px;
+  height:38px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-weight:800;
+  border-radius:8px;
+}
+.btn-sq.plus{background:#e8f6ea;color:#287133}
+.btn-sq.minus{background:#fdeaea;color:#a62e2e}
+
+/* GEMEINSAMER WEISSER BEREICH */
+.main-game-layout{
+  background:#fff;
+  border-radius:20px;
+  padding:24px 30px;
+  box-shadow:0 6px 24px rgba(32,75,120,.08);
+  display:grid;
+  grid-template-columns:250px 1fr 250px;
+  gap:16px;
+  align-items:center;
+}
+.spacer-left{display:block}
+
+/* Großes zentriertes Raster */
+.grid-container{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+}
+#grid{
+  display:grid;
+  grid-template-columns:repeat(9,1fr);
+  gap:6px;
+  width:min(680px,100%);
+}
+.cell{
+  aspect-ratio:1;
+  border:2px solid #d7e3f1;
+  background:#f9fbfe;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(18px,2.8vw,28px);
+  font-weight:800;
+  color:#304b65;
+  user-select:none;
+}
+
+/* Satz-Übersicht rechts */
+.set-history-wrapper{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  margin-left:-18px; 
+}
+.set-history-title{
+  font-size:22px;
+  font-weight:900;
+  color:#111827;
+  margin-bottom:22px;
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+}
+.set-rows-container{
+  display:grid;
+  gap:22px;
+}
+.set-row{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:2px 0;
+  text-align:center;
+  gap:10px;
+}
+.set-row-label{
+  font-size:18px;
+  font-weight:800;
+  color:#111827;
+}
+
+/* Punktestand-Kästchen */
+.set-score-boxes{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+}
+.score-box{
+  width:60px;
+  height:54px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  font-size:30px;
+  font-weight:800;
+  box-shadow:0 3px 8px rgba(0,0,0,0.05);
+}
+/* Linke Zahl Blau */
+.score-box.left{
+  background:#eaf2fc;
+  color:var(--blue-dark);
+  border:2.5px solid #a9c9f0;
+}
+/* Rechte Zahl Grün */
+.score-box.right{
+  background:#eaf6ea;
+  color:#236830;
+  border:2.5px solid #b7d9b9;
+}
+.score-colon{
+  font-size:30px;
+  font-weight:800;
+  color:#71849a;
+}
+
+.gameover{
+  background:#eaf4ff;border:2px solid #9dc1ec;border-radius:10px;
+  padding:6px 10px;text-align:center;font-size:15px;font-weight:800;
+  color:var(--blue-dark);margin-bottom:6px;
+}
+.hidden{display:none}
+
+/* Modals */
+.modal{
+  position:fixed;inset:0;background:rgba(20,43,66,.55);display:none;
+  align-items:center;justify-content:center;padding:20px;z-index:100
+}
+.modal.show{display:flex}
+.modal-box{
+  background:#fff;border-radius:20px;padding:24px;max-width:460px;width:100%;
+  text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)
+}
+.modal-box.rules-box{text-align:left}
+.modal-box h2{margin-top:0;font-size:24px;color:var(--blue-dark)}
+.rules-list{font-size:14px;line-height:1.6;color:#475e75;padding-left:20px;margin:14px 0}
+.rules-list strong{color:#1e3750}
+
+@media(max-width:1020px){
+  .top-game-section{grid-template-columns:1fr;gap:10px}
+  .target-card{order:-1}
+  .main-game-layout{grid-template-columns:1fr;padding:16px;gap:16px}
+  .spacer-left{display:none}
+  .set-history-wrapper{margin-left:0}
+  .set-rows-container{grid-template-columns:repeat(3,1fr);gap:12px}
+  header{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div>
+    <h1>⚡ Blitzkopf</h1>
+  </div>
+  <div class="top-actions">
+    <button class="secondary" onclick="openRulesModal()">ℹ️ Spielablauf</button>
+    <button class="primary" onclick="newGrid()">Neues Raster</button>
+    <button class="secondary" onclick="newTarget()">Neue Zahl</button>
+    <button class="danger" onclick="resetGame()">Neues Spiel</button>
+  </div>
+</header>
+
+<!-- OBERE LEISTE: Team A | Zielzahl | Team B -->
+<div class="top-game-section">
+  <!-- TEAM A (Blauer Rand) -->
+  <div class="card team a">
+    <div class="team-head">
+      <div>
+        <div class="team-name" id="nameDisplayA" onclick="editTeamName('A')" title="Klicken zum Bearbeiten">Team A</div>
+        <div class="sets-badge">Gewonnene Sätze: <span id="setsA">0</span></div>
+      </div>
+    </div>
+    <div class="score-action-row">
+      <div class="score" id="scoreA">0</div>
+      <div class="btn-square-group">
+        <button class="btn-sq minus" onclick="addPoint('A',-1)" title="−1 Punkt">−</button>
+        <button class="btn-sq plus" onclick="addPoint('A',1)" title="+1 Punkt">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZIELZAHL MITTE -->
+  <div class="card target-card">
+    <div id="gameOver" class="gameover hidden">🏆 SPIELENDE</div>
+    <div class="target-label">ZIELZAHL</div>
+    <div id="target">0</div>
+  </div>
+
+  <!-- TEAM B (Grüner Rand) -->
+  <div class="card team b">
+    <div class="team-head">
+      <div>
+        <div class="team-name" id="nameDisplayB" onclick="editTeamName('B')" title="Klicken zum Bearbeiten">Team B</div>
+        <div class="sets-badge">Gewonnene Sätze: <span id="setsB">0</span></div>
+      </div>
+    </div>
+    <div class="score-action-row">
+      <div class="score" id="scoreB">0</div>
+      <div class="btn-square-group">
+        <button class="btn-sq minus" onclick="addPoint('B',-1)" title="−1 Punkt">−</button>
+        <button class="btn-sq plus" onclick="addPoint('B',1)" title="+1 Punkt">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GEMEINSAMER WEISSER BEREICH: Raster & Satzübersicht -->
+<div class="main-game-layout">
+  <!-- Unsichtbarer Spacer links für exakte Zentrierung -->
+  <div class="spacer-left"></div>
+
+  <!-- GROSSES ZENTRIERTES RASTER -->
+  <div class="grid-container">
+    <div id="grid"></div>
+  </div>
+
+  <!-- SATZ-HISTORIE RECHTS -->
+  <div class="set-history-wrapper">
+    <div class="set-history-title">Sätze (Best of 3)</div>
+    <div class="set-rows-container">
+      <div class="set-row" id="setRow1">
+        <span class="set-row-label">1. Satz</span>
+        <div class="set-score-boxes">
+          <div class="score-box left" id="set1A">—</div>
+          <span class="score-colon">:</span>
+          <div class="score-box right" id="set1B">—</div>
+        </div>
+      </div>
+      <div class="set-row" id="setRow2">
+        <span class="set-row-label">2. Satz</span>
+        <div class="set-score-boxes">
+          <div class="score-box left" id="set2A">—</div>
+          <span class="score-colon">:</span>
+          <div class="score-box right" id="set2B">—</div>
+        </div>
+      </div>
+      <div class="set-row" id="setRow3">
+        <span class="set-row-label">3. Satz</span>
+        <div class="set-score-boxes">
+          <div class="score-box left" id="set3A">—</div>
+          <span class="score-colon">:</span>
+          <div class="score-box right" id="set3B">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- MODAL: GEWINNER / SATZ -->
+<div class="modal" id="winnerModal">
+  <div class="modal-box">
+    <h2 id="winnerTitle">🏆</h2>
+    <button class="primary" onclick="closeModal('winnerModal')">Weiter</button>
+  </div>
+</div>
+
+<!-- MODAL: REGELN / SPIELABLAUF -->
+<div class="modal" id="rulesModal">
+  <div class="modal-box rules-box">
+    <h2>📖 Spielablauf & Regeln</h2>
+    <ul class="rules-list">
+      <li>Die Lehrkraft / Spielleitung entscheidet, ob die vorgerechnete Rechnung korrekt ist.</li>
+      <li><strong>Richtige Rechnung:</strong> Team erhält <strong>+1 Punkt</strong> (+ Button).</li>
+      <li><strong>Falsche Rechnung:</strong> Team erhält <strong>−1 Punkt</strong> (− Button). Minuspunkte sind möglich.</li>
+      <li><strong>Satzgewinn:</strong> Wer zuerst <strong>7 Punkte</strong> erreicht, gewinnt den Satz. Das Satzergebnis wird in der Leiste eingetragen und beide Teams starten bei <strong>0 : 0</strong> in die nächste Runde.</li>
+      <li><strong>Spielende:</strong> Wer zuerst <strong>2 Sätze</strong> gewinnt (maximal 3 Sätze), gewinnt das gesamte Spiel.</li>
+    </ul>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="primary" onclick="closeModal('rulesModal')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let grid = [];
+let target = 0;
+let teamNames = { A: "Team A", B: "Team B" };
+let score = { A: 0, B: 0 };
+let sets = { A: 0, B: 0 };
+let setHistory = [];
+let currentSetNumber = 1;
+let gameFinished = false;
+
+function rand1to9() { return Math.floor(Math.random() * 9) + 1; }
+function randTarget() { return Math.floor(Math.random() * 79) + 3; } // 3 bis 81
+
+function newGrid() {
+  grid = Array.from({ length: 9 }, () => Array.from({ length: 9 }, rand1to9));
+  renderGrid();
+}
+
+function newTarget() {
+  if (gameFinished) return;
+  target = randTarget();
+  document.getElementById('target').textContent = target;
+}
+
+function renderGrid() {
+  const el = document.getElementById('grid');
+  el.innerHTML = '';
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.textContent = grid[r][c];
+      el.appendChild(cell);
+    }
+  }
+}
+
+function addPoint(team, amount) {
+  if (gameFinished) return;
+
+  score[team] += amount;
+
+  if (score[team] >= 7) {
+    sets[team]++;
+    setHistory.push({ A: score.A, B: score.B });
+
+    updateSetHistoryDisplay();
+
+    score.A = 0;
+    score.B = 0;
+    updateScore();
+
+    const winnerName = teamNames[team];
+
+    if (sets[team] >= 2) {
+      gameFinished = true;
+      document.getElementById('target').textContent = '—';
+      const winMsg = `🏆 ${winnerName} hat gewonnen!`;
+      document.getElementById('gameOver').textContent = winMsg;
+      document.getElementById('gameOver').classList.remove('hidden');
+      showWinnerModal(winMsg);
+      return;
+    }
+
+    currentSetNumber++;
+    showWinnerModal(`🎉 Satz für ${winnerName}!`);
+  } else {
+    updateScore();
+  }
+}
+
+function updateScore() {
+  document.getElementById('scoreA').textContent = score.A;
+  document.getElementById('scoreB').textContent = score.B;
+  document.getElementById('setsA').textContent = sets.A;
+  document.getElementById('setsB').textContent = sets.B;
+}
+
+function updateSetHistoryDisplay() {
+  for (let i = 1; i <= 3; i++) {
+    const elA = document.getElementById(`set${i}A`);
+    const elB = document.getElementById(`set${i}B`);
+    if (setHistory[i - 1]) {
+      elA.textContent = setHistory[i - 1].A;
+      elB.textContent = setHistory[i - 1].B;
+    } else {
+      elA.textContent = '—';
+      elB.textContent = '—';
+    }
+  }
+}
+
+function editTeamName(team) {
+  const current = teamNames[team];
+  const newName = prompt(`Neuer Name für ${current}:`, current);
+  if (newName && newName.trim() !== '') {
+    teamNames[team] = newName.trim();
+    document.getElementById(`nameDisplay${team}`).textContent = teamNames[team];
+  }
+}
+
+function resetGame() {
+  score = { A: 0, B: 0 };
+  sets = { A: 0, B: 0 };
+  setHistory = [];
+  currentSetNumber = 1;
+  gameFinished = false;
+  document.getElementById('gameOver').classList.add('hidden');
+  updateScore();
+  updateSetHistoryDisplay();
+  newGrid();
+  newTarget();
+}
+
+function showWinnerModal(title) {
+  document.getElementById('winnerTitle').textContent = title;
+  document.getElementById('winnerModal').classList.add('show');
+}
+
+function openRulesModal() {
+  document.getElementById('rulesModal').classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// Initialer Start
+newGrid();
+newTarget();
+updateScore();
+</script>
+</body>
+</html>
